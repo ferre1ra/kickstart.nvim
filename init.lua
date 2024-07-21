@@ -78,11 +78,15 @@ set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
 -- ssf
 set('i', 'jj', '<Esc>', { desc = 'Exit insert mode' })
-set('n', 'ç', ':', { desc = 'Enter command line mode' })
+set({ 'n', 'v' }, 'ç', ':', { desc = 'Enter command line mode' })
 set({ 'n', 'v' }, 'e', 'g_', { desc = 'Go to [e]nd of line' })
 set({ 'n', 'v' }, 't', '^', { desc = 'Go to s[t]art of line' })
+set('n', '<C-s>', ':w!<CR>', { desc = 'Save file' })
+set('i', '<C-s>', '<C-o>:w!<CR>', { desc = 'Save file' })
 set('n', ',', vim.cmd.bp, { desc = 'Go to previous buffer [<]' })
 set('n', '.', vim.cmd.bn, { desc = 'Go to next buffer [>]' })
+set({ 'n', 'v' }, '´', '%')
+set('n', '-', '<CMD>Oil --float<CR>', { desc = 'Open parent directory' })
 
 -- Diagnostic keymaps
 set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
@@ -142,6 +146,32 @@ vim.opt.rtp:prepend(lazypath)
 --
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
+  {
+    'mrjones2014/smart-splits.nvim',
+    config = function()
+      local smart_splits = require 'smart-splits'
+      -- recommended mappings
+      -- resizing splits
+      -- these keymaps will also accept a range,
+      -- for example `10<A-h>` will `resize_left` by `(10 * config.default_amount)`
+      set('n', '<A-h>', smart_splits.resize_left)
+      set('n', '<A-j>', smart_splits.resize_down)
+      set('n', '<A-k>', smart_splits.resize_up)
+      set('n', '<A-l>', smart_splits.resize_right)
+      -- moving between splits
+      set('n', '<C-h>', smart_splits.move_cursor_left)
+      set('n', '<C-j>', smart_splits.move_cursor_down)
+      set('n', '<C-k>', smart_splits.move_cursor_up)
+      set('n', '<C-l>', smart_splits.move_cursor_right)
+      set('n', '<C-\\>', smart_splits.move_cursor_previous)
+      -- swapping buffers between windows
+      set('n', '<leader><leader>h', smart_splits.swap_buf_left)
+      set('n', '<leader><leader>j', smart_splits.swap_buf_down)
+      set('n', '<leader><leader>k', smart_splits.swap_buf_up)
+      set('n', '<leader><leader>l', smart_splits.swap_buf_right)
+    end,
+  },
+
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
 
@@ -155,7 +185,7 @@ require('lazy').setup({
   --    require('Comment').setup({})
 
   -- "gc" to comment visual regions/lines
-  { 'numToStr/Comment.nvim', opts = {} },
+  -- { 'numToStr/Comment.nvim', opts = {} },
 
   -- Here is a more advanced example where we pass configuration
   -- options to `gitsigns.nvim`. This is equivalent to the following Lua:
@@ -190,153 +220,12 @@ require('lazy').setup({
   -- after the plugin has been loaded:
   --  config = function() ... end
 
-  { -- Useful plugin to show you pending keybinds.
-    'folke/which-key.nvim',
-    event = 'VimEnter', -- Sets the loading event to 'VimEnter'
-    config = function() -- This is the function that runs, AFTER loading
-      require('which-key').setup()
-
-      -- Document existing key chains
-      require('which-key').register {
-        ['<leader>c'] = { name = '[C]ode', _ = 'which_key_ignore' },
-        ['<leader>d'] = { name = '[D]ocument', _ = 'which_key_ignore' },
-        ['<leader>r'] = { name = '[R]ename', _ = 'which_key_ignore' },
-        ['<leader>s'] = { name = '[S]earch', _ = 'which_key_ignore' },
-        ['<leader>w'] = { name = '[W]orkspace', _ = 'which_key_ignore' },
-        ['<leader>t'] = { name = '[T]oggle', _ = 'which_key_ignore' },
-        ['<leader>h'] = { name = 'Git [H]unk', _ = 'which_key_ignore' },
-      }
-      -- visual mode
-      require('which-key').register({
-        ['<leader>h'] = { 'Git [H]unk' },
-      }, { mode = 'v' })
-    end,
-  },
-
   -- NOTE: Plugins can specify dependencies.
   --
   -- The dependencies are proper plugin specifications as well - anything
   -- you do for a plugin at the top level, you can do for a dependency.
   --
   -- Use the `dependencies` key to specify the dependencies of a particular plugin
-
-  { -- Fuzzy Finder (files, lsp, etc)
-    'nvim-telescope/telescope.nvim',
-    event = 'VimEnter',
-    branch = '0.1.x',
-    dependencies = {
-      'nvim-lua/plenary.nvim',
-      { -- If encountering errors, see telescope-fzf-native README for installation instructions
-        'nvim-telescope/telescope-fzf-native.nvim',
-
-        -- `build` is used to run some command when the plugin is installed/updated.
-        -- This is only run then, not every time Neovim starts up.
-        build = 'make',
-
-        -- `cond` is a condition used to determine whether this plugin should be
-        -- installed and loaded.
-        cond = function()
-          return vim.fn.executable 'make' == 1
-        end,
-      },
-      { 'nvim-telescope/telescope-ui-select.nvim' },
-
-      -- Useful for getting pretty icons, but requires a Nerd Font.
-      {
-        'nvim-tree/nvim-web-devicons',
-        enabled = vim.g.have_nerd_font,
-        event = { 'VeryLazy' },
-        dependencies = {
-          'Allianaab2m/nvim-material-icon-v3',
-        },
-        config = function()
-          require('nvim-web-devicons').setup {
-            override = require('nvim-material-icon').get_icons(),
-          }
-        end,
-      },
-    },
-    config = function()
-      -- Telescope is a fuzzy finder that comes with a lot of different things that
-      -- it can fuzzy find! It's more than just a "file finder", it can search
-      -- many different aspects of Neovim, your workspace, LSP, and more!
-      --
-      -- The easiest way to use Telescope, is to start by doing something like:
-      --  :Telescope help_tags
-      --
-      -- After running this command, a window will open up and you're able to
-      -- type in the prompt window. You'll see a list of `help_tags` options and
-      -- a corresponding preview of the help.
-      --
-      -- Two important keymaps to use while in Telescope are:
-      --  - Insert mode: <c-/>
-      --  - Normal mode: ?
-      --
-      -- This opens a window that shows you all of the keymaps for the current
-      -- Telescope picker. This is really useful to discover what Telescope can
-      -- do as well as how to actually do it!
-
-      -- [[ Configure Telescope ]]
-      -- See `:help telescope` and `:help telescope.setup()`
-      require('telescope').setup {
-        -- You can put your default mappings / updates / etc. in here
-        --  All the info you're looking for is in `:help telescope.setup()`
-        --
-        -- defaults = {
-        --   mappings = {
-        --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-        --   },
-        -- },
-        -- pickers = {}
-        extensions = {
-          ['ui-select'] = {
-            require('telescope.themes').get_dropdown(),
-          },
-        },
-      }
-
-      -- Enable Telescope extensions if they are installed
-      pcall(require('telescope').load_extension, 'fzf')
-      pcall(require('telescope').load_extension, 'ui-select')
-
-      -- See `:help telescope.builtin`
-      local builtin = require 'telescope.builtin'
-      set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
-      set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
-      set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
-      set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
-      set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
-      set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
-      set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
-      set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
-      set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
-      set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
-
-      -- Slightly advanced example of overriding default behavior and theme
-      set('n', '<leader>/', function()
-        -- You can pass additional configuration to Telescope to change the theme, layout, etc.
-        builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
-          winblend = 10,
-          previewer = false,
-        })
-      end, { desc = '[/] Fuzzily search in current buffer' })
-
-      -- It's also possible to pass additional configuration options.
-      --  See `:help telescope.builtin.live_grep()` for information about particular keys
-      set('n', '<leader>s/', function()
-        builtin.live_grep {
-          grep_open_files = true,
-          prompt_title = 'Live Grep in Open Files',
-        }
-      end, { desc = '[S]earch [/] in Open Files' })
-
-      -- Shortcut for searching your Neovim configuration files
-      set('n', '<leader>sn', function()
-        builtin.find_files { cwd = vim.fn.stdpath 'config' }
-      end, { desc = '[S]earch [N]eovim files' })
-    end,
-  },
-
   { -- LSP Configuration & Plugins
     'neovim/nvim-lspconfig',
     dependencies = {
@@ -347,7 +236,7 @@ require('lazy').setup({
 
       -- Useful status updates for LSP.
       -- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
-      { 'j-hui/fidget.nvim', opts = {} },
+      vim.g.vscode and {} or { 'j-hui/fidget.nvim', opts = {} },
 
       -- `neodev` configures Lua LSP for your Neovim config, runtime and plugins
       -- used for completion, annotations and signatures of Neovim apis
@@ -504,8 +393,23 @@ require('lazy').setup({
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`tsserver`) will work just fine
-        -- tsserver = {},
-        --
+        tsserver = {
+          filetypes = {
+            'typescript',
+            'vue',
+          },
+          init_options = {
+            plugins = {
+              {
+                name = '@vue/typescript-plugin',
+                location = '/home/sandro/.nvm/versions/node/v20.14.0/lib/node_modules/@vue/typescript-plugin',
+                languages = { 'javascript', 'typescript', 'vue' },
+              },
+            },
+          },
+        },
+
+        volar = { filetypes = { 'vue' } },
 
         lua_ls = {
           -- cmd = {...},
@@ -711,13 +615,36 @@ require('lazy').setup({
     'folke/tokyonight.nvim',
     priority = 1000, -- Make sure to load this before all the other start plugins.
     init = function()
-      -- Load the colorscheme here.
-      -- Like many other themes, this one has different styles, and you could load
+      -- load the colorscheme here.
+      -- like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      vim.cmd.colorscheme 'tokyonight'
 
-      -- You can configure highlights by doing something like:
-      vim.cmd.hi 'Comment gui=none'
+      -- you can configure highlights by doing something like:
+      vim.cmd.hi 'comment gui=none'
+    end,
+    opts = function()
+      return {
+        style = 'night',
+        sidebars = {
+          'qf',
+          'vista_kind',
+          -- "terminal",
+          'spectre_panel',
+          'startuptime',
+          'Outline',
+        },
+        on_highlights = function(hl, c)
+          local prompt = '#2d3149'
+          hl.TelescopeNormal = { bg = c.bg_dark, fg = c.fg }
+          hl.TelescopeBorder = { bg = c.bg_dark, fg = c.bg_dark }
+          hl.TelescopePromptNormal = { bg = prompt }
+          hl.TelescopePromptBorder = { bg = prompt, fg = prompt }
+          hl.TelescopePromptTitle = { bg = c.fg_gutter, fg = c.orange }
+          hl.TelescopePreviewTitle = { bg = c.bg_dark, fg = c.bg_dark }
+          hl.TelescopeResultsTitle = { bg = c.bg_dark, fg = c.bg_dark }
+        end,
+      }
     end,
   },
 
@@ -809,14 +736,14 @@ require('lazy').setup({
   -- require 'kickstart.plugins.autopairs',
   require 'kickstart.plugins.neo-tree',
   require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
-  require 'kickstart.plugins.nvim-tmux-navigation',
+  -- require 'kickstart.plugins.nvim-tmux-navigation',
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   --    For additional information, see `:help lazy.nvim-lazy.nvim-structuring-your-plugins`
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
 }, {
   ui = {
     -- If you are using a Nerd Font: set icons to an empty table which will use the
